@@ -52,7 +52,6 @@ class GSplatAligner:
             source = np.concatenate([np.array(trimesh.load(x).vertices) for x in files], 0)
 
             # normalize with percentile first
-            # mat_ref, mat = np.eye(4), np.eye(4)
             mat_ref = self.get_normalize_matrix(target)
             mat = self.get_normalize_matrix(source)
             # normalize such that sv3d do not scale, but only translation

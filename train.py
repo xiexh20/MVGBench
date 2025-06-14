@@ -226,9 +226,7 @@ if __name__ == "__main__":
     safe_state(args.quiet)
 
     # Start GUI server, configure and run training
-    # network_gui.init(args.ip, args.port) # this does not relly affect the performance
     torch.autograd.set_detect_anomaly(args.detect_anomaly)
-    # training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from)
 
     # run multiple training sequentially
 
@@ -247,7 +245,6 @@ if __name__ == "__main__":
         out_name = ss[-2] if args.bbox_size > 1.5 else ss[-2] + f'-bb{args.bbox_size}'
         out_dir = f'output/consistency/{out_name}/{name}'
         ckpt_file = f'{out_dir}/point_cloud/iteration_10000/point_cloud.ply'
-        # print(ckpt_file)
         if osp.isfile(ckpt_file) and not args.redo:
             print(f'{ckpt_file} exists, skipping')
             continue

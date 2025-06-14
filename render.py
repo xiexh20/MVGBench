@@ -40,33 +40,22 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     makedirs(depth_path, exist_ok=True)
     loop = tqdm(views, desc="Rendering progress") if not quiet else views
 
-    # need to scale covariance
-    # ratio = 1.5
-    # gaussians._xyz *= ratio
-    # gaussians._scaling = gaussians._scaling + np.log(ratio) # multiply becomes addition in exponential space
-
     for idx, view in enumerate(loop):
         # view.T *= ratio # multiply camera as well, this somehow is not working
         output = render(view, gaussians, pipeline, background)
         rendering = output["render"]
-        # alpha = output["alpha"]
-        # rendering = torch.cat([rendering, alpha], dim=0)
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
         dmap = (output['depth'].cpu().numpy() * 65535 / 10.).astype(np.uint16)[0]
         if name != 'train':
-            # dmap = (dmap /dmap.max() * 255 ).astype(np.uint8)
             cv2.imwrite(os.path.join(depth_path, '{0:05d}'.format(idx) + ".png"), dmap)
         if name == 'train':
-            # only save train-gt
             gt = view.original_image[0:3, :, :]
             torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png")) # do not save gt
 
 def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool, quiet=False):
     with torch.no_grad():
         gaussians = GaussianModel(dataset.sh_degree) # empty scene
-        # TODO: change cameras here to render random views
-        scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False) # TODO: why here the train cameras also include test?? -> need to specify --eval otherwise all images are used in training
-        # import pdb;pdb.set_trace()
+        scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
@@ -104,13 +93,7 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
                 # mat = torch.from_numpy(transforms).float().to(gaussians._xyz.device)
                 # gaussians._xyz = torch.matmul(gaussians._xyz, mat[:3, :3].T) + mat[:3, 3][None]
                 gaussians._scaling = gaussians._scaling + torch.log(scale[None].to(gaussians._scaling.device)) # the covariance scale should be updated as well!
-                # import pdb;pdb.set_trace()
 
-                # vcen, obj_size = np.array(d['cent']), d['scale']
-            # run normalization, TODO: the scale should be applied to the covariance matrix as well!
-            # xyz = (gaussians._xyz - torch.from_numpy(vcen[None]).float().to(gaussians._xyz.device))/obj_size
-            # gaussians._xyz = xyz
-            # args.test_name = 'norm' # save to another path
         if not skip_train:
              render_set(dataset.model_path, "train", scene.loaded_iter, scene.getTrainCameras(), gaussians, pipeline, background, quiet)
 
@@ -149,11 +132,8 @@ if __name__ == "__main__":
         ss = folder.split('/')
         name = osp.basename(folder)  # scan name
         out_dir = f'output/consistency/{ss[-2]}/{name}'
-        if '/old/' in folder:
-            out_dir = f'output/consistency/old/{ss[-2]}/{name}'
         args.model_path = out_dir
         args.quiet = True if len(folders) > 1 else False
-        # args.source_path = out_dir, don't do this, the src parth will be loaded from cfg file automatically
 
         # now merge args from config file
         args_run = get_combined_args(args)
@@ -165,10 +145,3 @@ if __name__ == "__main__":
         except Exception as e:
             import traceback
             print(traceback.format_exc())
-
-    # args = get_combined_args(parser)
-    # print("Rendering " + args.model_path)
-
-    # for it in args.iteration:
-    #     render_sets(model.extract(args), it, pipeline.extract(args), args.skip_train, args.skip_test)
-

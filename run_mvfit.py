@@ -51,7 +51,7 @@ def run_combined(args):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('pat') # eg. /home/ubuntu/efs/static/GSO30-3dgs-format/imagedream-v21-nolight_even/*
+    parser.add_argument('pat') # eg. example/imagedream-v21-nolight_even/*
     parser.add_argument('--white_background', default=False, action='store_true') # for predictions
     parser.add_argument('-b', '--bbox_size', type=float, default=5.0)
     parser.add_argument('--align', default=False, action='store_true')
