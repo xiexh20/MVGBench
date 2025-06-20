@@ -87,7 +87,7 @@ class GSplatAligner:
                 json.dump(out_dict, open(outfile, 'w'), indent=2)
                 outfile = osp.join(folder_ref.replace('_even', part), name, 'transform_icp.json')
                 json.dump(out_ref, open(outfile, 'w'), indent=2)
-        print(f'all done, average cd: {np.mean(chamfs):.5f}')
+        print(f'all done')
 
     def get_normalize_matrix(self, target):
         vcen, size = normalize_percentile(target, 10, 0.5) # do not scale up too much
