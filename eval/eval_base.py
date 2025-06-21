@@ -138,26 +138,7 @@ class BaseEvaluator:
         else:
             dataset_path = '/home/ubuntu/efs/static/GSO30'
             n=30
-        # if 'GSO30' in dataset_path:
-        #     # gso30
-        #     render_names = ['imagedream-v21-nolight', 'mvdfusion-v21-nolight', 'sv3d-v21-nolight', 'zero123-v21-nolight']
-        #     n = 30
-        # elif 'gso100' in dataset_path:
-        #     render_names = ['gso100-zero123-v21-elev000-amb1.0', 'gso100-imagedream-v21-elev000-amb1.0',
-        #                     'gso100-mvdfusion-v16-elev030-amb1.0', 'gso100-sv3d-v21-elev012-amb1.0']
-        #     n = 30
-        # elif 'omni202' in dataset_path:
-        #     render_names = ['omni202-imagedream-v21-elev002-amb1.0', 'omni202-mvdfusion-v16-elev030-amb1.0',
-        #                     'omni202-sv3d-v21-elev012-amb1.0', 'omni202-zero123-v21-elev000-amb1.0']
-        #     n = 30
-        # elif 'mvpnet50' in dataset_path:
-        #     render_names = ['mvpnet50-mvdfusion-v16-manual', 'mvpnet50-mvdfusion-v16-manual-elev030']
-        #     n = 1 # all other frames are the same
-        # elif 'co3dv2' in dataset_path:
-        #     render_names = ['imagedream-v21-frame00001-elev030']
-        #     n = 1  # all other frames are the same
-        # else:
-        #     raise ValueError(f"Unknown dataset {dataset_path}")
+
         print(f"GT files from {dataset_path}, {render_name}")
         render_names = [render_name]
         gt_files = []
@@ -184,7 +165,7 @@ class BaseEvaluator:
                 return
             name_even = name_even[0]
         if "*" in name_odd:
-            name_odd = sorted(glob(name_odd)) # allow evaluation directly after test
+            name_odd = sorted(glob(name_odd)) # evaluate only the first one, this makes it easy to integrate into the same pipeline in MV generation code
             if len(name_odd) == 0:
                 print("No path found in", name_odd)
                 return
@@ -280,24 +261,7 @@ class BaseEvaluator:
         :param images_mv:
         :return:
         """
-        # def fill_in_white_bkg(img_np):
-        #     "fill in background color to white"
-        #     mask = np.mean(img_np, axis=-1) <=0.00001
-        #     img_np[mask] = 255 # background as white, with this: fid 125.30 -> 165.17
-        #     # print(mask.shape, img_np.shape)
-        #     Image.fromarray(img_np).save('data/test.png') # the image has lots of white background!
-        #     return img_np
-        # if use true white background: FID=89.80(0.00), gso100: FID: 126.76(elev30),62.89(elev12)
-        # omni202: 40.29(elev0)
-        # feat_model = FID.build_feature_extractor('clean', 'cuda', use_dataparallel=True)
-        # np_feats_mv = FID.get_files_features(images_mv, feat_model)
-        # np_feats_gt = FID.get_files_features(images_gt, feat_model)
-        # TODO: implement work around to handle gt image with rgba
-        # use clip, we need to use same GT image set!
-        # gso100: 8.77 (sv3d-elev012), omni202: 4.76 (zero123-elev0), gso30: 9.66
-        # syncdreamer: gso30: 13.34 (zero123-nolight), gso100: 7.42 (mvdfusion-elev30), omni202: 5.55 (mvdfusion-elev030)
-        # syncdreamer: gso30: 9.66 (mvdfusion-nolight), gso100: 9.35 (sv3d-elev12), omni202: 7.41 (zero123-elev0)
-        from cleanfid.clip_features import CLIP_fx, img_preprocess_clip
+        from eval.cleanfid.clip_features import CLIP_fx, img_preprocess_clip
         clip_fx = CLIP_fx("ViT-B/32", device="cuda") # Free3d setup
         feat_model = clip_fx
         custom_fn_resize = img_preprocess_clip
@@ -336,37 +300,6 @@ class BaseEvaluator:
                         veven[:, 1] >= -1.0) & (veven[:, 2] >= -1.0)
                 veven = veven[m2]
 
-            # normalize points to a bbox
-
-            # vmin = verts.min(axis=0)
-            # vmax = verts.max(axis=0)
-            # vcen = (vmin + vmax) / 2
-            # obj_size = np.abs(verts - vcen).max()
-            # use robust scale and center
-
-            # q1 = np.percentile(verts, 25, axis=0)
-            # q3 = np.percentile(verts, 75, axis=0)
-            # obj_size = 1.5 * np.median(q3 - q1)
-            # q1 = np.percentile(verts, 10, axis=0) # robust2
-            # q3 = np.percentile(verts, 90, axis=0)
-            # obj_size = np.median(q3 - q1)
-
-            # adapt the scale based on noise level
-            # sample first
-            # N = 60000
-            # indices = np.random.choice(len(vodd), N, replace=len(vodd) < N)
-            # vodd = np.array(vodd)[indices]
-            # indices = np.random.choice(len(veven), N, replace=len(veven) < N)
-            # veven = np.array(veven)[indices]
-
-            # nbrs = NearestNeighbors(n_neighbors=10, algorithm='ball_tree').fit(verts)
-            # distances, _ = nbrs.kneighbors(verts)
-            # local_densities = 1 / (np.mean(distances, axis=1) + 1e-6)  # prevent zero
-            # density_std = np.std(local_densities)
-            # normalized_noise = density_std / np.mean(local_densities)
-            # normalized_noise = np.clip(normalized_noise, 1e-6, 1.) # need clip, otherwise it goes beyond
-            # q = normalized_noise * 10
-
             N = 60000
             indices = np.random.choice(len(vodd), N, replace=len(vodd) < N)
             vodd = np.array(vodd)[indices]
@@ -374,35 +307,14 @@ class BaseEvaluator:
             veven = np.array(veven)[indices]
 
             if args.normalize_percentile:
-                # vcen, obj_size = normalize_percentile(np.concatenate((vodd, veven), axis=0), args.percentile)
-                # # vcen, obj_size, _ = normalize_adaptive(np.concatenate((vodd, veven), axis=0), args.percentile)
-                # vodd = (vodd - vcen) / obj_size
-                # veven = (veven - vcen) / obj_size
                 # load from file of ICP results
                 nfile = f'{feven}/transform_icp.json'
                 mat = np.array(json.load(open(nfile, 'r'))['transformation'])
                 veven = np.matmul(veven, mat[:3, :3].T) + mat[:3, 3]
                 vodd = np.matmul(vodd, mat[:3, :3].T) + mat[:3, 3]
-        # fscore, cd = compute_fscore(pts_odd.copy(), pts_even.copy(), thres=0.02)
-        # do FPS
-        # pts_odd = np.array(pc_odd.vertices)
-        # if len(pts_odd) < N:
-        #     pts_odd = pts_odd[np.random.choice(len(pts_odd), N, replace=True)]
-        # pts_even = np.array(pc_even.vertices)
-        # if len(pts_even) < N:
-        #     pts_even = pts_even[np.random.choice(len(pts_even), N, replace=True)]
-        # pts_odd = sample_farthest_points(torch.from_numpy(pts_odd).float()[None], torch.Tensor([N]))[0][0].numpy()
-        # pts_even = sample_farthest_points(torch.from_numpy(pts_even).float()[None], torch.Tensor([N]))[0][0].numpy()
-        # for debug: save some files
-        # trimesh.PointCloud(pts_even, np.array([[0, 1., 0]]).repeat(len(pts_even), axis=0)).export(f'output/pclouds/eval/{name}_fps.ply')
-        # pts_even = np.array(pc_even.vertices)
-        # trimesh.PointCloud(pts_even, np.array([[1.0, 0., 0]]).repeat(len(pts_even), axis=0)).export(
-        #     f'output/pclouds/eval/{name}_orig.ply')
-        # return
         pc_count.append(len(veven))
         pc_count.append(len(vodd))
         # fscore, cd = compute_fscore(pc_odd.vertices, pc_even.vertices, thres=0.02)
-        # hausd = metrics.hausdorff_distance(np.array(pc_odd.vertices), np.array(pc_even.vertices))
         fscore, cd = compute_fscore(vodd, veven, thres=0.02)
         hausd = 0.
         return {
@@ -411,7 +323,6 @@ class BaseEvaluator:
             'Hausdorff': hausd*self.m2cm,
         }
 
-    # def format_output(self, args, chamfs, files_3d, fscores, hausdorffs, lpips, pc_count, pixels, psnrs, ssims):
     def format_output(self, args, errors_all, files_3d):
         test_name = args.test_name # if 'v16' not in args.identifier else 'test-v16'
         name_even = args.name_even
@@ -420,8 +331,6 @@ class BaseEvaluator:
             name_even = sorted(glob(name_even))[0]
         if "*" in name_odd:
             name_odd = sorted(glob(name_odd))[0] # allow evaluation directly after test
-        # print(f"In total {len(chamfs)} examples. even: {name_even}, odd: {name_odd}, test name {test_name}")
-        # print(f"Points count: max={np.max(pc_count)}, min={np.min(pc_count)}, avg={np.mean(pc_count)}")
         keys = self.get_metric_keys()
         assert len(errors_all.keys()) == len(keys)
         es = f'In total {len(errors_all["Chamf"])} examples. even: {name_even}, odd: {name_odd}, test name {test_name}.\n'
@@ -540,15 +449,6 @@ if __name__ == '__main__':
 
     evaluator = BaseEvaluator()
     evaluator.evaluate(args)
-    # exit(0)
-
-    # evaluator = GsplatGTEvaluator()
-    #
-    # for it in tqdm(range(1000, 30001, 1000)):
-    #     args.iteration = it
-    #     # args.identifier = f'error-vs-3dgs-it{it:06d}'
-    #     args.identifier = f'GT-image-3dgs-vs-it{it:06d}-reso{args.reso}'
-    #     evaluator.evaluate(args)
 
 
 
