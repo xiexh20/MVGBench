@@ -10,11 +10,32 @@ import torch, math
 import os.path as osp
 import torchvision.transforms as T
 from PIL import Image
+from glob import glob
+import json
 from torchvision.transforms.functional import InterpolationMode
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
+
+def count_vlm_results(keys, name_even, out_fname, model_name):
+    json_files = sorted(glob(osp.join(name_even, f'*/{out_fname}_{model_name}.json')))
+    counts = {}
+    total = 0
+    for json_file in json_files:
+        d = json.load(open(json_file))
+        total += len(d.keys())
+        for k, v in d.items():
+            if k == 'prompts':
+                total -= 1
+                continue
+            for idx, ans in enumerate(v):
+                if keys[idx] not in counts:
+                    counts[keys[idx]] = 0
+                if 'yes' in ans.lower():
+                    counts[keys[idx]] += 1
+    counts['total'] = total
+    return counts
 
 def split_model(model_name):
     device_map = {}

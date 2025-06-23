@@ -34,7 +34,7 @@ class VLMEvaluator:
         self.generation_config = dict(max_new_tokens=2048, do_sample=False,
                                       pad_token_id=tokenizer.eos_token_id)  # eos for open-end generation, report bug!
         self.model_name = osp.basename(args.path)
-        self.out_fname = 'object_IQA-quality-1+3-new-ref'
+        self.out_fname = 'IQA-quality-1+3-new-ref'
         self.keys_vlm = ['IQ-vlm', 'class', 'color', 'style'] # key names of VLM metrics
 
     def evaluate(self, args):
@@ -92,7 +92,7 @@ class VLMEvaluator:
             json.dump(res_dict, open(outfile, 'w'), indent=2)
 
         # Now accumulate results
-        counts = self.count_vlm_results(self.keys_vlm, args.name_even)
+        counts = internvl_utils.count_vlm_results(self.keys_vlm, args.name_even, self.out_fname, self.model_name)
         vlm_scores = {}
         for key in self.keys_vlm:
             if counts['total'] == 0:
@@ -104,24 +104,7 @@ class VLMEvaluator:
             es += f'{k}: {v:.2f} '
         print(es)
 
-    def count_vlm_results(self, keys, name_even):
-        json_files = sorted(glob(osp.join(name_even, f'*/{self.out_fname}_{self.model_name}.json')))
-        counts = {}
-        total = 0
-        for json_file in json_files:
-            d = json.load(open(json_file))
-            total += len(d.keys())
-            for k, v in d.items():
-                if k == 'prompts':
-                    total -= 1
-                    continue
-                for idx, ans in enumerate(v):
-                    if keys[idx] not in counts:
-                        counts[keys[idx]] = 0
-                    if 'yes' in ans.lower():
-                        counts[keys[idx]] += 1
-        counts['total'] = total
-        return counts
+
 
     def load_semantics(self, folder, vlm_ann_path):
         # load vlm-annotation

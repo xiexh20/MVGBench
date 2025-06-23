@@ -2,7 +2,6 @@
 Evaluate the 3D consistency between two lifted 3DGS
 """
 import sys, os
-
 import cv2
 
 sys.path.append(os.getcwd())

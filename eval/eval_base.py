@@ -56,6 +56,7 @@ class BaseEvaluator:
         self.outdir = 'results'
         os.makedirs(self.outdir, exist_ok=True)
         os.makedirs(osp.join(self.outdir, 'raw'), exist_ok=True)
+        self.keys_vlm = ['IQ-vlm', 'class', 'color', 'style']
 
     def load_filtered_gaussians(self, file):
         plydata1 = PlyData.read(file)
@@ -75,16 +76,12 @@ class BaseEvaluator:
         parser.add_argument('-no', '--name_odd')
         parser.add_argument('-i', '--identifier')
         parser.add_argument('-reso', type=int, default=256)
-        parser.add_argument('-filter', default=False, action='store_true')
         parser.add_argument('-it', '--iteration', default=10000, type=int)
-        parser.add_argument('-bf', '--box_filter', default=False, action='store_true')
-        parser.add_argument('-p', '--percentile', type=float, default=10)
         parser.add_argument('-tn', '--test_name', default='test')
         parser.add_argument('-np', '--normalize_percentile', default=False, action='store_true')
-        parser.add_argument('-d', '--dataset_path', help='used to compute FID', default='/home/ubuntu/efs/static/GSO30')
-        parser.add_argument('-rn', '--render_name', help='used to computed FID', default='zero123-v21-nolight')
-        parser.add_argument('--nofid', default=False, action='store_true')
+        parser.add_argument('-rp', '--rendering_path', help='used to compute FID if given', default=None)
         parser.add_argument('--n_eval', default=None, type=int, help='evaluate how many examples')
+        parser.add_argument('--add_vlm', default=False, action='store_true', help='also compute VLM metric results')
 
         parser.add_argument('--random_order', default=False, action='store_true') # randomize the order of objects
         return parser
@@ -97,47 +94,35 @@ class BaseEvaluator:
         return ["cPSNR", 'cSSIM', 'cLPIPS']
 
     def get_metrics_3d(self):
-        return ["Chamf", 'F-score', 'Hausdorff']
+        return ["Chamf", 'F-score']
 
     def get_gt_files(self, dataset_path, name_even, num_eval=None, order_indices=None):
-        "get a list of gt image files to compute fid"
+        """
+        format for the name_even: <method>+<render-name>+i<input index>_<even|odd>
+
+        """
         name_even = osp.basename(name_even)
         if '+' not in name_even:
-            render_name = name_even.split('_')[0]#[:-4]
+            render_name = name_even.split('_')[0]
         else:
             render_name = name_even.split('_')[0].split('+')[1]
-        if 'gso100' in render_name or 'sv3d-reso576' in render_name:
-            dataset_path = '/home/ubuntu/efs/static/gso100'
+        if 'gso100' in render_name:
+            dataset_path = osp.join(dataset_path, 'gso100')
             n = 30
         elif 'omni202' in render_name:
-            dataset_path = '/home/ubuntu/efs/static/omni202'
-            n = 30
-        elif 'mvpnet50' in render_name:
-            dataset_path = '/home/ubuntu/efs/static/mvpnet50'
-            n=1
-        elif 'omni3d' in render_name:
-            dataset_path = '/home/ubuntu/efs/static/OminiObj30'
+            dataset_path = osp.join(dataset_path, 'omni202')
             n = 30
         elif 'co3d2seq' in render_name:
-            dataset_path = '/home/ubuntu/efs/static/co3dv2-manual'
+            dataset_path = osp.join(dataset_path, 'co3d2seq')
             render_name = 'fid-16images'
             n = 16
         elif 'mvimgnet' in render_name:
-            dataset_path = '/home/ubuntu/efs/static/mvimgnet230'
+            dataset_path = osp.join(dataset_path, 'mvimgnet230')
             render_name = 'fid-16images'
             n = 16
-        elif 'views84' in render_name:
-            dataset_path = '/home/ubuntu/efs/static/objaverse/static-64'
-            n = 84
-        elif 'train-as-test' in render_name:
-            dataset_path = '/home/ubuntu/efs/static/objav100'
-            n = 21
-        elif 'objaveval' in render_name:
-            dataset_path = '/home/ubuntu/efs/static/objav-eval'
-            n = 16
         else:
-            dataset_path = '/home/ubuntu/efs/static/GSO30'
-            n=30
+            dataset_path = osp.join(dataset_path, 'GSO30') # 30 GSO objects
+            n = 30
 
         print(f"GT files from {dataset_path}, {render_name}")
         render_names = [render_name]
@@ -148,7 +133,7 @@ class BaseEvaluator:
         end = len(folders) if num_eval is None else num_eval
         for folder in folders[:end]:
             for rn in render_names:
-                files = sorted(glob(folder+"/"+rn+"/*.png")) + sorted(glob(folder+"/"+rn+"/*.webp"))
+                files = sorted(glob(folder+"/"+rn+"/*.png"))
                 gt_files.extend(files[:n])
         assert len(gt_files) > 0, 'no gt files found!'
         return gt_files
@@ -180,7 +165,6 @@ class BaseEvaluator:
         images_mv, images_gt = [], [] # all mv images, network direct prediction, and gt rendering
 
         order_indices = np.arange(len(scan_names)) if not args.random_order else np.random.choice(len(scan_names), len(scan_names), replace=False)
-        # images_gt = self.get_gt_files(args.dataset_path, name_even, args.n_eval, order_indices) # for computing FID
         scan_names = [scan_names[x] for x in order_indices]
 
         end = len(scan_names) if args.n_eval is None else args.n_eval
@@ -192,6 +176,7 @@ class BaseEvaluator:
             # collect image files for fid
             mv_files = sorted(glob(feven + f'/train/ours_{iteration}/gt/*.png')) + sorted(glob(fodd + f'/train/ours_{iteration}/gt/*.png'))
             images_mv.extend(mv_files)
+
             # evaluate 3D
             complete = self.check_3d_files(feven, fodd, iteration, name, name_odd)
             if not complete:
@@ -216,11 +201,21 @@ class BaseEvaluator:
             files_3d.append((fodd, feven))
 
         # compute fid
-        # if args.nofid:
-        #     score = float('nan')
-        # else:
-        #     score = self.compute_fid(images_gt, images_mv)
-        # errors_all['FID'] = score
+        if args.rendering_path is not None:
+            images_gt = self.get_gt_files(args.rendering_path, name_even, args.n_eval, order_indices) # for computing FID
+            score = self.compute_fid(images_gt, images_mv)
+            errors_all['FID'] = score
+
+        # add VLM
+        if args.add_vlm:
+            import internvl_utils
+            out_fname, model_name = 'object_IQA-quality-1+3-new-ref', 'InternVL2_5-78B'
+            counts = internvl_utils.count_vlm_results(self.keys_vlm, args.name_even, out_fname, model_name)
+            for key in self.keys_vlm:
+                if counts['total'] == 0:
+                    errors_all[key] = 0
+                else:
+                    errors_all[key] = counts[key] / counts['total']
 
         self.format_output(args, errors_all, files_3d)
 
@@ -332,6 +327,10 @@ class BaseEvaluator:
         if "*" in name_odd:
             name_odd = sorted(glob(name_odd))[0] # allow evaluation directly after test
         keys = self.get_metric_keys()
+        if args.rendering_path is not None:
+            keys.append('oFID')
+        if args.add_vlm:
+            keys.extend(self.keys_vlm)
         assert len(errors_all.keys()) == len(keys)
         es = f'In total {len(errors_all["Chamf"])} examples. even: {name_even}, odd: {name_odd}, test name {test_name}.\n'
         for k, v in errors_all.items():

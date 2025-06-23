@@ -21,11 +21,12 @@ pip install ./simple-knn
 ```
 
 ## Evaluation 
-We offer different ways to report our metrics:
+We offer different ways to report our metrics using example data:
 - [Evaluate only the five 3D consistency metrics](#3d-consistency-metric)
-- [Evaluate 3D consistency and oFID](#consistency-oFID)
 - [Evaluate only VLM based image quality and semantic consistency](#vlm-based-image-quality-and-semantic-consistency)
 - [Report all 10 metrics](#accumulate-all-metrics)
+
+For evaluating your own MVG model, please referen to [this doc](). 
 
 ### 3D consistency metric
 
@@ -77,9 +78,8 @@ python eval/eval_consistency.py \
 </details>
 
 <details>
-<summary><strong>Object FID (oFID) as image quality</strong></summary>
+<summary><strong>Add object FID (oFID) as image quality</strong></summary>
 
-#### <a id="consistency-oFID"></a>&#8203;
 For this you will need to download reference renderings from [here]() 
 After, extract it to local folder and pass the path to evaluation script:
 ```shell
@@ -112,8 +112,14 @@ python eval/eval_vlm.py --name_even output/consistency/syncdreamer+mvdfusion-v16
 It will print out summary of the four VLM metrics: IQ-vlm, class, color and style semantic consistency. 
 
 ### Accumulate all metrics
-After finishing the VLM evaluation in [previous step](), you can now accumulate all 10 metrics into one file by adding `--add_vlm` flag 
-using the 3D consistency evaluation script.   
+After finishing the VLM evaluation in [previous step](#vlm-based-image-quality-and-semantic-consistency), you can now accumulate all 10 metrics into one file by adding `--add_vlm` flag 
+using the 3D consistency evaluation script. Example:
+```shell
+python eval/eval_consistency.py \
+  --name_odd output/consistency/syncdreamer+mvdfusion-v16-elev030-amb1.0+i000+sel11v4_odd \
+  --name_even output/consistency/syncdreamer+mvdfusion-v16-elev030-amb1.0+i000+sel11v4_even \
+  --rendering_path <root/to/unzipped>/renderings --add_vlm
+```
 
 
 ## Citation
