@@ -91,5 +91,16 @@ Run evaluation with:
 ```shell
 python eval/eval_vlm.py --name_even output/consistency/syncdreamer+mvdfusion-v16-elev030-amb1.0+i000+sel11v4_even
 ```
-It will print out summary of the four VLM metrics: IQ-vlm, class, color and style semantic consitency. 
+It will print out summary of the four VLM metrics: IQ-vlm, class, color and style semantic consistency. 
 
+
+## Citation
+```
+@inproceedings{xie2025MVGBench,
+  title={MVGBench: a Comprehensive Benchmark for Multi-view Generation Models},
+  author={Xianghui Xie and Chuhang Zou and  Meher Gitika Karumuri and Jan Eric Lenssen and Gerard Pons-Moll},
+  year={2025},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV}
+}
+```

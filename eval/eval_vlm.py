@@ -55,7 +55,6 @@ class VLMEvaluator:
             if len(files) == 0:
                 print(f"Warning: no files found in {folder}/train/ours_10000/gt/!")
                 continue
-            name = osp.basename(folder[:-1])
             semantics = self.load_semantics(folder, args.vlm_ann_path)
 
             obj_cls, color, style = semantics

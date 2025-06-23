@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 import clip
-from cleanfid.fid import compute_fid
 
 
 def img_preprocess_clip(img_np):
