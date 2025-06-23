@@ -77,11 +77,9 @@ python eval/eval_consistency.py \
 </details>
 
 <details>
-<summary><strong>Object FID (oFID) as image quality</strong></summary> 
+<summary><strong>Object FID (oFID) as image quality</strong></summary>
 
-<a name="consistency-oFID"></a>
-
-Object FID (oFID)
+#### <a id="consistency-oFID"></a>&#8203;
 For this you will need to download reference renderings from [here]() 
 After, extract it to local folder and pass the path to evaluation script:
 ```shell
