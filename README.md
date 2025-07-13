@@ -123,12 +123,15 @@ python eval/eval_consistency.py \
 
 
 ## Citation
+If you use our code, please cite:
 ```
-@inproceedings{xie2025MVGBench,
-  title={MVGBench: a Comprehensive Benchmark for Multi-view Generation Models},
-  author={Xianghui Xie and Chuhang Zou and  Meher Gitika Karumuri and Jan Eric Lenssen and Gerard Pons-Moll},
-  year={2025},
-  archivePrefix={arXiv},
-  primaryClass={cs.CV}
+@misc{xie2025MVGBench,
+      title={MVGBench: Comprehensive Benchmark for Multi-view Generation Models}, 
+      author={Xianghui Xie and Chuhang Zou and Meher Gitika Karumuri and Jan Eric Lenssen and Gerard Pons-Moll},
+      year={2025},
+      eprint={2507.00006},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2507.00006}, 
 }
 ```
