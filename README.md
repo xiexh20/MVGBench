@@ -1,5 +1,5 @@
 # MVGBench
-A comprehensive benchmark suite for multi-view generation models
+A comprehensive benchmark suite for multi-view generation models (ICCV'25)
 
 [Project Page](https://virtualhumans.mpi-inf.mpg.de/MVGBench/) | [ArXiv paper](https://virtualhumans.mpi-inf.mpg.de/MVGBench/MVGBench.pdf)
 <p align="left">
