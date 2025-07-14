@@ -29,7 +29,7 @@ We offer different ways to report our metrics using example data:
 - [Evaluate only VLM based image quality and semantic consistency](#vlm-based-image-quality-and-semantic-consistency)
 - [Report all 10 metrics](#accumulate-all-metrics)
 
-For evaluating your own MVG model, please referen to [this doc](). 
+For evaluating your own MVG model, please referen to [this doc](./docs/custom_MVG.md). 
 
 ### 3D consistency metric
 
