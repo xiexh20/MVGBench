@@ -2,6 +2,9 @@
 A comprehensive benchmark suite for multi-view generation models
 
 [Project Page](https://virtualhumans.mpi-inf.mpg.de/MVGBench/) | [ArXiv paper](https://virtualhumans.mpi-inf.mpg.de/MVGBench/MVGBench.pdf)
+<p align="left">
+<img src="https://virtualhumans.mpi-inf.mpg.de/MVGBench/mvgbench-teaser.gif" alt="teaser" width="512"/>
+</p>
 
 ## Installation
 
