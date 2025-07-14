@@ -4,7 +4,7 @@
 For best setup performance, you should render the input images using the camera setup used during training time. 
 We provide most commonly used setup from SV3D, SyncDreamer, Zero123 and V3D, see our supplementary table 5 for the exact setups. 
 
-These renderings can be downloaded from [here](), the files are organized as:
+These renderings can be downloaded from [here](https://edmond.mpg.de/file.xhtml?fileId=315332&version=1.0), the files are organized as:
 ```shell
 |--gso100 # for 100 GSO objects
 |----object 
